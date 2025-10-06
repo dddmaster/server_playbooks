@@ -66,23 +66,17 @@
   ansible.builtin.command: rfkill unblock bluetooth
   when: soft_blocked.stdout | length > 0
   changed_when: soft_blocked.stdout | length > 0
+  notify: Restart Bluetooth service
 
 - name: Gather service facts
   ansible.builtin.service_facts:
 
-- name: Enable and start Bluetooth service
-  ansible.builtin.service:
-    name: bluetooth
-    state: started
-    enabled: true
+- name: Trigger Bluetooth service start if not running or enabled
+  ansible.builtin.debug:
+    msg: "Triggering Bluetooth service start"
   when: >
     'bluetooth' not in ansible_facts.services or
     ansible_facts.services['bluetooth'].state != 'running' or
     ansible_facts.services['bluetooth'].status != 'enabled'
-
-- name: Restart Bluetooth service if unblocked
-  ansible.builtin.service:
-    name: bluetooth
-    state: restarted
-  when: soft_blocked.stdout | length > 0
-  changed_when: soft_blocked.stdout | length > 0
+  changed_when: true
+  notify: Start and enable Bluetooth service
