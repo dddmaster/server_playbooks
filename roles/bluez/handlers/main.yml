@@ -1,0 +1,15 @@
+---
+- name: Start and enable Bluetooth service
+  ansible.builtin.service:
+    name: bluetooth
+    state: started
+    enabled: true
+  when: >
+    'bluetooth' not in ansible_facts.services or
+    ansible_facts.services['bluetooth'].state != 'running' or
+    ansible_facts.services['bluetooth'].status != 'enabled'
+
+- name: Restart Bluetooth service
+  ansible.builtin.service:
+    name: bluetooth
+    state: restarted
