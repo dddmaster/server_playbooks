@@ -1,0 +1,68 @@
+---
+- name: Verify BlueZ installation and configuration
+  hosts: all
+  become: true
+  tasks:
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Verify Bluetooth service is running and enabled
+      ansible.builtin.assert:
+        that:
+          - "'bluetooth' in ansible_facts.services"
+          - "ansible_facts.services['bluetooth'].state == 'running'"
+          - "ansible_facts.services['bluetooth'].status == 'enabled'"
+        fail_msg: "Bluetooth service is not running or enabled"
+        success_msg: "Bluetooth service is running and enabled"
+
+    - name: Check for Bluetooth controller
+      ansible.builtin.shell: bluetoothctl list | grep Controller || true
+      register: controller_check
+      changed_when: false
+
+    - name: Verify Bluetooth controller exists
+      ansible.builtin.assert:
+        that:
+          - "controller_check.stdout | length > 0"
+        fail_msg: "No Bluetooth controller found"
+        success_msg: "Bluetooth controller detected"
+
+    - name: Power on Bluetooth controller (if not already)
+      ansible.builtin.shell: bluetoothctl power on
+      ignore_errors: true
+
+    - name: Check if Bluetooth is powered on
+      ansible.builtin.shell: bluetoothctl show | grep 'Powered: yes' || true
+      register: powered_check
+      changed_when: false
+
+    - name: Verify Bluetooth is powered on
+      ansible.builtin.assert:
+        that:
+          - "powered_check.stdout | length > 0"
+        fail_msg: "Bluetooth is not powered on"
+        success_msg: "Bluetooth is powered on"
+
+    - name: Verify btusb module is loaded
+      ansible.builtin.shell: lsmod | grep btusb || true
+      register: btusb_check
+      changed_when: false
+
+    - name: Verify btusb module is present
+      ansible.builtin.assert:
+        that:
+          - "btusb_check.stdout | length > 0"
+        fail_msg: "btusb kernel module is not loaded"
+        success_msg: "btusb kernel module is loaded"
+
+    - name: Verify user is in lp group
+      ansible.builtin.shell: groups {{ bluetooth_user }} | grep lp || true
+      register: group_check
+      changed_when: false
+
+    - name: Verify user group membership
+      ansible.builtin.assert:
+        that:
+          - "group_check.stdout | length > 0"
+        fail_msg: "{{ bluetooth_user }} is not in lp group"
+        success_msg: "{{ bluetooth_user }} is in lp group"
