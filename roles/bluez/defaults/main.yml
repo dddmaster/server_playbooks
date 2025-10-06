@@ -1,0 +1,2 @@
+---
+bluetooth_user: "{{ ansible_user | default('root') }}"
