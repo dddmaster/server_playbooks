@@ -1,0 +1,6 @@
+---
+- name: Install and configure BlueZ on Alpine Linux
+  hosts: all
+  become: true
+  roles:
+    - bluez
