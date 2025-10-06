@@ -1,0 +1,88 @@
+---
+- name: Check if bluez and rfkill are installed
+  ansible.builtin.command: apk info | grep -E '^(bluez|rfkill)$'
+  register: packages_installed
+  changed_when: false
+  failed_when: false
+
+- name: Install required packages
+  community.general.apk:
+    name:
+      - bluez
+      - rfkill
+    state: present
+    update_cache: true
+  when: packages_installed.stdout_lines | length < 2
+
+- name: Check if user is in lp group
+  ansible.builtin.shell: groups {{ bluetooth_user }} | grep lp || true
+  register: user_group_check
+  changed_when: false
+  failed_when: false
+
+- name: Add user to lp group
+  ansible.builtin.user:
+    name: "{{ bluetooth_user }}"
+    groups: lp
+    append: true
+  when: user_group_check.stdout | length == 0
+
+- name: Check if btusb kernel module is loaded
+  ansible.builtin.shell: lsmod | grep btusb || true
+  register: btusb_loaded
+  changed_when: false
+  failed_when: false
+
+- name: Load btusb kernel module
+  ansible.builtin.modprobe:
+    name: btusb
+    state: present
+  when: btusb_loaded.stdout | length == 0
+
+- name: Check if btusb module is configured to load on boot
+  ansible.builtin.stat:
+    path: /etc/modules-load.d/btusb.conf
+  register: btusb_conf
+  changed_when: false
+
+- name: Ensure btusb loads on boot
+  ansible.builtin.copy:
+    content: |
+      # Load btusb kernel module
+      btusb
+    dest: /etc/modules-load.d/btusb.conf
+    mode: '0644'
+  when: not btusb_conf.stat.exists or btusb_conf.stat.content is not defined or 'btusb' not in btusb_conf.stat.content
+
+- name: Check if Bluetooth is soft blocked
+  ansible.builtin.shell: |
+    set -o pipefail
+    rfkill list bluetooth | grep 'Soft blocked: yes' || true
+  register: soft_blocked
+  changed_when: false
+  failed_when: false
+
+- name: Unblock Bluetooth if soft blocked
+  ansible.builtin.command: rfkill unblock bluetooth
+  when: soft_blocked.stdout | length > 0
+  changed_when: soft_blocked.stdout | length > 0
+
+- name: Gather service facts
+  ansible.builtin.service_facts:
+
+- name: Enable and start Bluetooth service
+  ansible.builtin.service:
+    name: bluetooth
+    state: started
+    enabled: true
+  when: >
+    'bluetooth' not in ansible_facts.services or
+    ansible_facts.services['bluetooth'].state != 'running' or
+    ansible_facts.services['bluetooth'].status != 'enabled'
+
+- name: Restart Bluetooth service if unblocked
+  ansible.builtin.service:
+    name: bluetooth
+    state: restarted
+  when: soft_blocked.stdout | length > 0
+  changed_when: soft_blocked.stdout | length > 0
