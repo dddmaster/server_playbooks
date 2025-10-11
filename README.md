@@ -1,3 +1,8 @@
+# server_playbooks
+Collection of server playbooks | ai generated 
+
+
+
 # BlueZ Ansible Role for Alpine Linux
 
 This repository contains an Ansible role to install and configure BlueZ, the Bluetooth protocol stack, on Alpine Linux. The role ensures idempotency and is tested using Molecule with a Dockerized Alpine Linux environment. This `README.md` provides instructions for running the playbook on `localhost` and testing it with Molecule.
