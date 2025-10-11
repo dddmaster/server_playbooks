@@ -1,18 +1,22 @@
 ---
-- name: Check if bluez and rfkill are installed
-  ansible.builtin.command: apk info | grep -E '^(bluez|rfkill)$'
-  register: packages_installed
+- name: Check if bluez is installed
+  community.general.apk:
+    name: "{{ item }}"
+    state: present
+    update_cache: true
+  register: package_check
+  check_mode: true
   changed_when: false
-  failed_when: false
+  loop:
+    - bluez
 
 - name: Install required packages
   community.general.apk:
     name:
       - bluez
-      - rfkill
     state: present
     update_cache: true
-  when: packages_installed.stdout_lines | length < 2
+  when: package_check.results.0.packages is defined
 
 - name: Check if user is in lp group
   ansible.builtin.shell: groups {{ bluetooth_user }} | grep lp || true

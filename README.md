@@ -110,7 +110,7 @@ To apply the BlueZ role to your local Alpine Linux machine, follow these steps:
    ansible-playbook -i inventory.yml site.yml
    ```
 
-   - The playbook installs `bluez` and `rfkill`, adds the user to the `lp` group, loads the `btusb` kernel module, configures it for boot, unblocks Bluetooth if soft-blocked, and ensures the Bluetooth service is running and enabled.
+   - The playbook installs `bluez` , adds the user to the `lp` group, loads the `btusb` kernel module, configures it for boot, unblocks Bluetooth if soft-blocked, and ensures the Bluetooth service is running and enabled.
    - The playbook is idempotent, so running it multiple times will not cause unintended changes.
 
 4. **Verify the Installation**:
